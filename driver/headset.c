@@ -90,13 +90,13 @@ static int gip_headset_pcm_close(struct snd_pcm_substream *sub)
 static int gip_headset_pcm_hw_params(struct snd_pcm_substream *sub,
 				     struct snd_pcm_hw_params *params)
 {
-	return snd_pcm_lib_alloc_vmalloc_buffer(sub,
+	return snd_pcm_lib_malloc_pages(sub,
 						params_buffer_bytes(params));
 }
 
 static int gip_headset_pcm_hw_free(struct snd_pcm_substream *sub)
 {
-	return snd_pcm_lib_free_vmalloc_buffer(sub);
+	return snd_pcm_lib_free_pages(sub);
 }
 
 static int gip_headset_pcm_prepare(struct snd_pcm_substream *sub)
