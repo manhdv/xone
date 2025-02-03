@@ -148,6 +148,11 @@ static snd_pcm_uframes_t gip_headset_pcm_pointer(struct snd_pcm_substream *sub)
 	return bytes_to_frames(sub->runtime, stream->pointer);
 }
 
+static struct page* snd_pcm_lib_malloc_pages_temp(struct snd_pcm_substream * sub, long unsigned int size)
+{
+	return NULL;
+}
+
 static const struct snd_pcm_ops gip_headset_pcm_ops = {
 	.open = gip_headset_pcm_open,
 	.close = gip_headset_pcm_close,
@@ -157,7 +162,7 @@ static const struct snd_pcm_ops gip_headset_pcm_ops = {
 	.prepare = gip_headset_pcm_prepare,
 	.trigger = gip_headset_pcm_trigger,
 	.pointer = gip_headset_pcm_pointer,
-	.page = snd_pcm_lib_get_malloc_page,
+	.page = snd_pcm_lib_malloc_pages_temp,
 };
 
 static bool gip_headset_advance_pointer(struct gip_headset_stream *stream,
