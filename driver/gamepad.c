@@ -4,6 +4,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/version.h>
 #include <linux/uuid.h>
 #include <linux/timer.h>
 
@@ -98,7 +99,12 @@ struct gip_gamepad {
 
 static void gip_gamepad_send_rumble(struct timer_list *timer)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 16, 0)
 	struct gip_gamepad_rumble *rumble = from_timer(rumble, timer, timer);
+#else
+	struct gip_gamepad_rumble *rumble = timer_container_of(rumble, timer,
+							       timer);
+#endif
 	struct gip_gamepad *gamepad = container_of(rumble, typeof(*gamepad),
 						   rumble);
 	unsigned long flags;
@@ -207,7 +213,11 @@ static int gip_gamepad_init_input(struct gip_gamepad *gamepad)
 	return 0;
 
 err_delete_timer:
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
 	del_timer_sync(&gamepad->rumble.timer);
+#else
+	timer_delete_sync(&gamepad->rumble.timer);
+#endif
 
 	return err;
 }
@@ -335,7 +345,11 @@ static void gip_gamepad_remove(struct gip_client *client)
 {
 	struct gip_gamepad *gamepad = dev_get_drvdata(&client->dev);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
 	del_timer_sync(&gamepad->rumble.timer);
+#else
+	timer_delete_sync(&gamepad->rumble.timer);
+#endif
 }
 
 static struct gip_driver gip_gamepad_driver = {

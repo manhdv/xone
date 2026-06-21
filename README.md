@@ -18,12 +18,8 @@
 
 Installing `xone` will disable the `xpad` kernel driver. If you are still using Xbox or Xbox 360 peripherals, you will have to install [`xpad-noone`](https://github.com/medusalix/xpad-noone) as a replacement for `xpad`.
 
-## Important notes
-
-This driver is still in active development. Use at your own risk!
-If you are running `xow` upgrading to `xone` is *highly recommended*!
-Always update your Xbox devices to the latest firmware version!
-**Any feedback including bug reports, suggestions or ideas is [*greatly appreciated*](https://discord.gg/FDQxwWk).**
+> [!IMPORTANT]
+> This project is in maintenance mode and will receive only occasional minor fixes. An actively developed fork is available [here](https://github.com/dlundqvist/xone).
 
 ## Features
 

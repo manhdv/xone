@@ -4,6 +4,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/version.h>
 #include <linux/hrtimer.h>
 #include <sound/core.h>
 #include <sound/initval.h>
@@ -87,18 +88,6 @@ static int gip_headset_pcm_close(struct snd_pcm_substream *sub)
 	return 0;
 }
 
-static int gip_headset_pcm_hw_params(struct snd_pcm_substream *sub,
-				     struct snd_pcm_hw_params *params)
-{
-	return snd_pcm_lib_alloc_vmalloc_buffer(sub,
-						params_buffer_bytes(params));
-}
-
-static int gip_headset_pcm_hw_free(struct snd_pcm_substream *sub)
-{
-	return snd_pcm_lib_free_vmalloc_buffer(sub);
-}
-
 static int gip_headset_pcm_prepare(struct snd_pcm_substream *sub)
 {
 	return 0;
@@ -151,13 +140,9 @@ static snd_pcm_uframes_t gip_headset_pcm_pointer(struct snd_pcm_substream *sub)
 static const struct snd_pcm_ops gip_headset_pcm_ops = {
 	.open = gip_headset_pcm_open,
 	.close = gip_headset_pcm_close,
-	.ioctl = snd_pcm_lib_ioctl,
-	.hw_params = gip_headset_pcm_hw_params,
-	.hw_free = gip_headset_pcm_hw_free,
 	.prepare = gip_headset_pcm_prepare,
 	.trigger = gip_headset_pcm_trigger,
 	.pointer = gip_headset_pcm_pointer,
-	.page = snd_pcm_lib_get_vmalloc_page,
 };
 
 static bool gip_headset_advance_pointer(struct gip_headset_stream *stream,
@@ -273,6 +258,7 @@ static int gip_headset_init_pcm(struct gip_headset *headset)
 
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &gip_headset_pcm_ops);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &gip_headset_pcm_ops);
+	snd_pcm_set_managed_buffer_all(pcm, SNDRV_DMA_TYPE_VMALLOC, NULL, 0, 0);
 
 	return snd_card_register(card);
 }
@@ -459,8 +445,13 @@ static int gip_headset_probe(struct gip_client *client)
 	INIT_DELAYED_WORK(&headset->work_power_on, gip_headset_power_on);
 	INIT_WORK(&headset->work_register, gip_headset_register);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 13, 0)
 	hrtimer_init(&headset->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	headset->timer.function = gip_headset_send_samples;
+#else
+	hrtimer_setup(&headset->timer, gip_headset_send_samples,
+		      CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+#endif
 
 	err = gip_enable_audio(client);
 	if (err)

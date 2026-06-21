@@ -3,6 +3,7 @@
  * Copyright (C) 2023 Severin von Wnuck-Lipinski <severinvonw@outlook.de>
  */
 
+#include <linux/version.h>
 #include <linux/scatterlist.h>
 #include <crypto/hash.h>
 #include <crypto/sha2.h>
@@ -37,6 +38,7 @@ struct shash_desc *gip_auth_alloc_shash(const char *alg)
 
 int gip_auth_get_transcript(struct shash_desc *desc, void *transcript)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
 	struct sha256_state state;
 	int err;
 
@@ -49,6 +51,29 @@ int gip_auth_get_transcript(struct shash_desc *desc, void *transcript)
 		return err;
 
 	return crypto_shash_import(desc, &state);
+#else
+	struct sha256_state *state;
+	int err;
+
+	state = kzalloc(crypto_shash_descsize(desc->tfm), GFP_KERNEL);
+	if (!state)
+		return err;
+
+	err = crypto_shash_export(desc, state);
+	if (err)
+		goto err_free_state;
+
+	err = crypto_shash_final(desc, transcript);
+	if (err)
+		goto err_free_state;
+
+	err = crypto_shash_import(desc, state);
+
+err_free_state:
+	kfree(state);
+
+	return err;
+#endif
 }
 
 int gip_auth_compute_prf(struct shash_desc *desc, const char *label,
@@ -100,7 +125,7 @@ int gip_auth_encrypt_rsa(u8 *key, int key_len,
 	if (!buf)
 		return -ENOMEM;
 
-	tfm = crypto_alloc_akcipher("pkcs1pad(rsa,sha256)", 0, 0);
+	tfm = crypto_alloc_akcipher("pkcs1pad(rsa)", 0, 0);
 	if (IS_ERR(tfm)) {
 		err = PTR_ERR(tfm);
 		goto err_free_buf;
